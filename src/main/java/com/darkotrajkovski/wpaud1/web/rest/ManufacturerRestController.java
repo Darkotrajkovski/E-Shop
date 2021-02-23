@@ -10,11 +10,11 @@ import java.util.List;
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/manufacturers")
-public class ManufacturerController {
+public class ManufacturerRestController {
 
     private final ManufacturerService manufacturerService;
 
-    public ManufacturerController(ManufacturerService manufacturerService) {
+    public ManufacturerRestController(ManufacturerService manufacturerService) {
         this.manufacturerService = manufacturerService;
     }
 

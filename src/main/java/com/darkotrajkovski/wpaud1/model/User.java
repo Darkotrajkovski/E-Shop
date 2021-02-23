@@ -25,11 +25,14 @@ public class User implements UserDetails {
     private boolean isCredentialsNonExpired = true;
     private boolean isEnabled = true;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user")
     private List<ShoppingCart> carts;
 
     @Enumerated(value = EnumType.STRING)
     private Role role;
+
+    @ManyToOne
+    private Discount discount;
 
     public User(String username, String password, String name, String surname, Role role) {
         this.username = username;
