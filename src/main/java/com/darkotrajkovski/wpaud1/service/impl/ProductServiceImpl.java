@@ -4,13 +4,16 @@ import com.darkotrajkovski.wpaud1.model.Category;
 import com.darkotrajkovski.wpaud1.model.Manufacturer;
 import com.darkotrajkovski.wpaud1.model.Product;
 import com.darkotrajkovski.wpaud1.model.dto.ProductDto;
+import com.darkotrajkovski.wpaud1.model.events.ProductCreatedEvent;
 import com.darkotrajkovski.wpaud1.model.exceptions.CategoryNotFoundException;
 import com.darkotrajkovski.wpaud1.model.exceptions.ManufacturerNotFoundException;
 import com.darkotrajkovski.wpaud1.model.exceptions.ProductNotFoundException;
 import com.darkotrajkovski.wpaud1.repository.jpa.CategoryRepository;
 import com.darkotrajkovski.wpaud1.repository.jpa.ManufacturerRepository;
 import com.darkotrajkovski.wpaud1.repository.jpa.ProductRepository;
+import com.darkotrajkovski.wpaud1.repository.views.ProductsPerManufacturerViewRepository;
 import com.darkotrajkovski.wpaud1.service.ProductService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -23,11 +26,15 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ManufacturerRepository manufacturerRepository;
+    private final ProductsPerManufacturerViewRepository productsPerManufacturerViewRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
-    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, ManufacturerRepository manufacturerRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, ManufacturerRepository manufacturerRepository, ProductsPerManufacturerViewRepository productsPerManufacturerViewRepository, ApplicationEventPublisher applicationEventPublisher) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.manufacturerRepository = manufacturerRepository;
+        this.productsPerManufacturerViewRepository = productsPerManufacturerViewRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -53,7 +60,12 @@ public class ProductServiceImpl implements ProductService {
         Manufacturer manufacturer = manufacturerRepository.findById(manufacturerId)
                 .orElseThrow(() -> new ManufacturerNotFoundException(manufacturerId));
         productRepository.deleteByName(name);
-        return Optional.of(productRepository.save(new Product(name, price, quantity, category, manufacturer)));
+        Product product = new Product(name, price, quantity, category, manufacturer);
+        productRepository.save(product);
+        //this.refreshMaterializedView();
+
+        this.applicationEventPublisher.publishEvent(new ProductCreatedEvent(product));
+        return Optional.of(product);
     }
 
     @Override
@@ -69,7 +81,12 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ManufacturerNotFoundException(productDto.getManufacturer()));
 
         this.productRepository.deleteByName(productDto.getName());
-        return Optional.of(this.productRepository.save(new Product(productDto.getName(), productDto.getPrice(), productDto.getQuantity(), category, manufacturer)));
+        Product product = new Product(productDto.getName(), productDto.getPrice(), productDto.getQuantity(), category, manufacturer);
+        productRepository.save(product);
+        //this.refreshMaterializedView();
+
+        this.applicationEventPublisher.publishEvent(new ProductCreatedEvent(product));
+        return Optional.of(product);
     }
 
     @Override
@@ -90,7 +107,9 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ManufacturerNotFoundException(manufacturerId));
         product.setManufacturer(manufacturer);
 
-        return Optional.of(this.productRepository.save(product));
+        productRepository.save(product);
+        //this.refreshMaterializedView();
+        return Optional.of(product);
     }
 
     @Override
@@ -109,6 +128,13 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ManufacturerNotFoundException(productDto.getManufacturer()));
         product.setManufacturer(manufacturer);
 
-        return Optional.of(this.productRepository.save(product));
+        productRepository.save(product);
+        //this.refreshMaterializedView();
+        return Optional.of(product);
+    }
+
+    @Override
+    public void refreshMaterializedView() {
+        this.productsPerManufacturerViewRepository.refreshMaterializedView();
     }
 }

@@ -16,6 +16,10 @@ public class User implements UserDetails {
 
     @Id
     private String username;
+
+    @Version
+    private Long version;
+
     private String password;
     private String name;
     private String surname;

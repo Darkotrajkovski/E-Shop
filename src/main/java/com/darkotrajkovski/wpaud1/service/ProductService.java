@@ -15,4 +15,5 @@ public interface ProductService {
     Optional<Product> save(ProductDto productDto);
     Optional<Product> edit(Long id, String name, Double price, Integer quantity, Long category, Long manufacturer);
     Optional<Product> edit(Long id, ProductDto productDto);
+    void refreshMaterializedView();
 }
